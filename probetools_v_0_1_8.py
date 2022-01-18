@@ -357,6 +357,7 @@ def make_probes(out_path, name, targets_path, batch_size, max_probes, cov_target
         print()
         # Break design loop if no low seqs were writen
         if seqs_writen == 0:
+            os.remove(low_cov_path)
             break
         # Make probes from target space
         num_probes = min(batch_size, max_panel_size - panel_size)
