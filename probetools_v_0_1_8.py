@@ -7,7 +7,7 @@ import os
 
 
 def main():
-    version = '0.1.7'
+    version = '0.1.8'
     # Parse command line arguments
     module, args = parse_args(sys.argv, version)
     # Set path to output directory and name to append to output files
@@ -370,7 +370,6 @@ def make_probes(out_path, name, targets_path, batch_size, max_probes, cov_target
         max_panel_size = panel_size + batch_size if max_probes == 'MAX' else max_probes
         # Break design loop if no potential probes or no probes writen
         if potential_probes == 0 or probes_writen == 0:
-            os.remove(low_cov_path)
             break
         # Capture probes against original targets
         blast_path = os.path.join(out_path, name + '_blast_results.tsv')
