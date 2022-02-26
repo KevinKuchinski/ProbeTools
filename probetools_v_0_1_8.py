@@ -357,7 +357,6 @@ def make_probes(out_path, name, targets_path, batch_size, max_probes, cov_target
         print()
         # Break design loop if no low seqs were writen
         if seqs_writen == 0:
-            os.remove(low_cov_path)
             break
         # Make probes from target space
         num_probes = min(batch_size, max_panel_size - panel_size)
@@ -675,7 +674,7 @@ def calc_cov_percentiles(capture_data, percentiles=(0, 0.05, 0.1, 0.25, 0.5, 0.7
     """Takes a capture dict and tuple of perentiles, and returns a list of those percentile
     values."""
     cov_values = []
-    for header,(seq, depth) in capture_data.items():
+    for header, (seq, depth) in capture_data.items():
         cov_values.append((len(depth) - depth.count(0)) * 100 / len(depth))
     cov_values = sorted(cov_values)
     percentile_values = []
@@ -701,7 +700,7 @@ def calc_total_probe_depth(capture_data):
     total_3 = 0
     total_4 = 0
     total_5 = 0
-    for header,(seq, depth) in capture_data.items():
+    for header, (seq, depth) in capture_data.items():
         total += len(depth)
         total_0 += depth.count(0)
         total_1 += depth.count(1)
@@ -736,15 +735,17 @@ def write_long_report(capture_data, report_path, name):
     """Takes a capture dict and generates the long-form report."""
     print(f'Writing probe coverage and probe depth stats for each target to {report_path}...')
     with open(report_path, 'w') as output_file:
-        header = ['name', 'target', 'length']
+        header = ['name', 'target', 'length', 'ATGCs', '%_ATGCs']
         header += ['bases_' + str(d) + 'X' for d in ['0', '1', '2', '3', '4', '5+']]
         header += ['%_cov_' + str(d) + 'X' for d in ['1', '2', '3', '4', '5']]
         output_file.write('\t'.join(header) + '\n')
-        for header,(seq, depth) in capture_data.items():
-            line = [name, header, str(len(depth))]
+        for header, (seq, depth) in capture_data.items():
+            total_ATGC = len([s for s in seq if s in 'ATGC'])
+            length = len(depth)
+            line = [name, header, str(length), str(total_ATGC), str(round(total_ATGC * 100 / length, 2))]
             line += [str(depth.count(d)) for d in [0, 1, 2, 3, 4]]
             line += [str(len([d for d in depth if d >= 5]))]
-            line += [str(round(len([d for d in depth if d >= dd]) * 100 / len(depth), 1)) for dd in [1, 2, 3, 4, 5]]
+            line += [str(round(len([d for d in depth if d >= dd]) * 100 / length, 1)) for dd in [1, 2, 3, 4, 5]]
             output_file.write('\t'.join(line) + '\n')
 
 
