@@ -7,7 +7,7 @@ import os
 
 
 def main():
-    version = '0.1.8'
+    version = '0.1.9'
     # Parse command line arguments
     module, args = parse_args(sys.argv, version)
     # Set path to output directory and name to append to output files
@@ -21,7 +21,7 @@ def main():
     if module == 'clusterkmers':
         print(f'\nProbeTools ClusterKmers v{version}')
         print('https://github.com/KevinKuchinski/ProbeTools\n')
-        cluster_kmers(out_path, name, args['-t'], args['-k'], args['-i'], args['-s'], args['-p'], args['-n'], args['-T'])
+        cluster_kmers(out_path, name, args['-t'], args['-k'], args['-i'], args['-s'], args['-d'], args['-p'], args['-n'], args['-T'])
     elif module == 'capture':
         print(f'\nProbeTools Capture v{version}')
         print('https://github.com/KevinKuchinski/ProbeTools\n')
@@ -37,7 +37,7 @@ def main():
     elif module == 'makeprobes':
         print(f'\nProbeTools MakeProbes v{version}')
         print('https://github.com/KevinKuchinski/ProbeTools\n')
-        make_probes(out_path, name, args['-t'], args['-b'], args['-m'], args['-c'], args['-k'], args['-i'], args['-s'], 
+        make_probes(out_path, name, args['-t'], args['-b'], args['-m'], args['-c'], args['-k'], args['-i'], args['-s'], args['-d'], 
                     args['-D'], args['-L'], args['-i'], args['-l'], args['-T'])
     elif module == 'merge':
         print(f'\nProbeTools Merge v{version}')
@@ -291,10 +291,10 @@ def append_fasta(fasta_path, new_fasta_path):
 
 
 ######### Top-level functions for modules ##########
-def cluster_kmers(out_path, name, targets_path, k, cluster_id, step, prev_probes_path, num_probes, threads):
+def cluster_kmers(out_path, name, targets_path, k, cluster_id, step, max_degen, prev_probes_path, num_probes, threads):
     check_input([targets_path])
     kmers_path = os.path.join(out_path, name + '_kmers.fa')
-    enum_kmers(targets_path, kmers_path, k, step)
+    enum_kmers(targets_path, kmers_path, k, step, max_degen)
     centroids_path = os.path.join(out_path, name + '_centroids.fa')
     cluster_kmers_with_VSEARCH(kmers_path, centroids_path, cluster_id, threads)
     remove_prev_probes(centroids_path, prev_probes_path)
@@ -331,7 +331,7 @@ def stats(out_path, name, capture_path):
     write_long_report(capture_data, report_path, name)
 
 
-def make_probes(out_path, name, targets_path, batch_size, max_probes, cov_target, k, cluster_id, step,
+def make_probes(out_path, name, targets_path, batch_size, max_probes, cov_target, k, cluster_id, step, max_degen,
                 min_depth, min_low_cov_length, min_id, min_capture_length, threads):
     check_input([targets_path])
     # Set variable for counting rounds of incremental probe design
@@ -361,7 +361,7 @@ def make_probes(out_path, name, targets_path, batch_size, max_probes, cov_target
         # Make probes from target space
         num_probes = min(batch_size, max_panel_size - panel_size)
         round_name = name + f'_round_{round_counter}'
-        potential_probes, probes_writen = cluster_kmers(out_path, round_name, low_cov_path, k, cluster_id, step, final_probes_path, num_probes, threads)
+        potential_probes, probes_writen = cluster_kmers(out_path, round_name, low_cov_path, k, cluster_id, step, max_degen, final_probes_path, num_probes, threads)
         print()
         # GARBAGE COLLECTION - Delete low cov seqs
         os.remove(low_cov_path)
@@ -406,7 +406,7 @@ def merge(capture_path, other_capture_path, merged_capture_path):
 
 
 ########## clusterkmers functions ##########
-def enum_kmers(targets_path, kmers_path, k, step):
+def enum_kmers(targets_path, kmers_path, k, step, max_degen):
     print(f'Enumerating all {k}-mers in {targets_path}...')
     # Load contents of targets FASTA
     headers, seqs = load_fasta(targets_path)
@@ -423,9 +423,12 @@ def enum_kmers(targets_path, kmers_path, k, step):
             elif len(seq) >= k and seq != '':
                 target_counter += 1
                 for i in range(0, len(seq) - k + 1, step):
-                    kmer_counter += 1
-                    output_file.write(f'>kmer_{kmer_counter}\n')
-                    output_file.write(seq[i:i+k] + '\n')
+                    kmer = seq[i:i+k]
+                    num_degen = len(kmer) - sum(kmer.count(base) for base in 'ATGC')
+                    if num_degen <= max_degen:
+                        kmer_counter += 1
+                        output_file.write(f'>kmer_{kmer_counter}\n')
+                        output_file.write(kmer + '\n')
     print(f' Enumerated {"{:,}".format(kmer_counter)} k-mers from {targets_path}.')
 
 
@@ -670,12 +673,28 @@ def write_low_cov_seqs(capture_data, low_cov_path, k, min_depth, min_length):
 
 
 ########## stats functions ##########
+def calc_cov_at_depth(seq, depth, min_depth):
+    covered_bases = 0
+    total_bases = 0
+    for base, base_depth in zip(seq, depth):
+        if base_depth >= min_depth:
+            covered_bases += 1
+            total_bases += 1
+        elif base in 'ATGC':
+            total_bases += 1
+    if total_bases == 0:
+        coverage = 0
+    else:
+        coverage = covered_bases * 100 / total_bases
+    return coverage
+
+
 def calc_cov_percentiles(capture_data, percentiles=(0, 0.05, 0.1, 0.25, 0.5, 0.75, 1)):
     """Takes a capture dict and tuple of perentiles, and returns a list of those percentile
     values."""
     cov_values = []
     for header, (seq, depth) in capture_data.items():
-        cov_values.append((len(depth) - depth.count(0)) * 100 / len(depth))
+        cov_values.append(calc_cov_at_depth(seq, depth, 1))
     cov_values = sorted(cov_values)
     percentile_values = []
     for percentile in percentiles:
@@ -745,7 +764,7 @@ def write_long_report(capture_data, report_path, name):
             line = [name, header, str(length), str(total_ATGC), str(round(total_ATGC * 100 / length, 2))]
             line += [str(depth.count(d)) for d in [0, 1, 2, 3, 4]]
             line += [str(len([d for d in depth if d >= 5]))]
-            line += [str(round(len([d for d in depth if d >= dd]) * 100 / length, 1)) for dd in [1, 2, 3, 4, 5]]
+            line += [str(round(calc_cov_at_depth(seq, depth, min_depth), 1)) for min_depth in [1, 2, 3, 4, 5]]
             output_file.write('\t'.join(line) + '\n')
 
 
