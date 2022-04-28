@@ -6,6 +6,7 @@ ProbeTools can further optimize probe panel designs by using an incremental stra
 Additional details and discussion about ProbeTools, along with <i>in silico</i> and <i>in vitro</i> validation results can be found in:
 
 Kuchinski <i>et al.</i> (2021) ProbeTools: Hybridization probe design for targeted genomic sequencing of diverse and hypervariable viral taxa.
+https://www.biorxiv.org/content/10.1101/2022.02.24.481870v1
 
 # Setup 
 ProbeTools requires VSEARCH and BLASTn. The ProbeTools package can be installed with these dependencies via Anaconda/Miniconda. It can also be installed separate from its dependencies via the Python Package Index (PyPI).
