@@ -1,12 +1,11 @@
 # ProbeTools
-ProbeTools is a collection of general-purpose modules for designing hybridization probe panels targeting diverse and hypervariable viral taxa. The objective of ProbeTools is to generate the smallest possible panel of oligo sequences that maximizes coverage of provided target sequences. It is based on k-mer clustering. In brief, probe-length k-mers are enumerated from the target space, usually spaced one nucleotide apart so that all possible k-mers are enumerated. The k-mers are then clustered based on their nucleotide sequence identity to collapse redundant probes enumerated from conserved genomic loci. Cluster centroids become probe candidates, which are ranked based on the size of the cluster they represent; centroids representing larger clusters are assumed to make better probes by virtue of having similarity to more sequence in the target space. 
+ProbeTools is a collection of general-purpose modules for designing hybridization probe panels targeting diverse and hypervariable viral taxa. The objective of ProbeTools is to generate the smallest possible panel of oligo sequences that maximizes coverage of provided target sequences. It is based on k-mer clustering. In brief, probe-length k-mers are enumerated from the target space, usually spaced one nucleotide apart so that all possible k-mers are enumerated. The k-mers are then clustered based on their nucleotide sequence identity to collapse redundant probes enumerated from conserved genomic loci. Cluster centroids become probe candidates, which are ranked based on the size of the cluster they represent; centroids representing larger clusters are assumed to make better probes by virtue of having similarity to more sub-sequences in the target space. 
 
-ProbeTools can further optimize probe panel designs by using an incremental strategy. In this strategy, probes are added to the panel in batches. Between the addition of each batch, ProbeTools determines what regions of the target space have achieved coverage and removes them from the target space before designing the next batch. This improves coverage of less-common sequences in the target space and reduces the generation of redundant probes.
+ProbeTools can further optimize probe panel designs by using an incremental strategy. In this strategy, probes are added to the panel in batches. Between the addition of each batch, ProbeTools determines what regions of the target space have achieved coverage and removes them from the target space before designing the next batch. This improves coverage of less-common sub-sequences in the target space and reduces the generation of redundant probes.
 
 Additional details and discussion about ProbeTools, along with <i>in silico</i> and <i>in vitro</i> validation results can be found in:
 
-Kuchinski <i>et al.</i> (2021) ProbeTools: Hybridization probe design for targeted genomic sequencing of diverse and hypervariable viral taxa.
-https://www.biorxiv.org/content/10.1101/2022.02.24.481870v1
+Kuchinski KS <i> et al.</i>. ProbeTools: designing hybridization probes for targeted genomic sequencing of diverse and hypervariable viral taxa. BMC Genomics. 2022 Aug 12;23(1):579. doi: 10.1186/s12864-022-08790-4. PMID: 35953803; PMCID: PMC9371634.
 
 # Setup 
 ProbeTools requires VSEARCH and BLASTn. The ProbeTools package can be installed with these dependencies via Anaconda/Miniconda. It can also be installed separate from its dependencies via the Python Package Index (PyPI).
@@ -29,7 +28,7 @@ pip install probetools
 # Quick-start to probe design
 ProbeTools provides the <b>makeprobes</b> module as a user-friendly, general-purpose implementation of the incremental k-mer clustering strategy. Simply indicate a FASTA file containing target sequences (-t), the number of probes to add each batch (-b), and an output path and design name to append to output files (-o):
 ```
-probetools incrementalprobes -t target_space_FASTA.fa -b 100 -o demo_probes_dir/demo_probes
+probetools makeprobes -t target_space_FASTA.fa -b 100 -o demo_probes_dir/demo_probes
 ```
 <b>makeprobes</b> will add batches of probes to the panel until one of three end points is reached:
 1. The panel achieves a target coverage goal (default: 90% of target sequences have at least 90% of their nucleotide positions covered)
@@ -53,7 +52,7 @@ A general-purpose implementation of the incremental k-mer clustering strategy. P
 
 <b>Usage example:</b>
 ```
-$ probetools incrementalprobes -t <target seqs> -b <batch size> -o <output dir>/<output name> [<optional args>]
+$ probetools makeprobes -t <target seqs> -b <batch size> -o <output dir>/<output name> [<optional args>]
 ```
 <b>Required arguments:</b>
 
