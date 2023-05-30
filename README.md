@@ -22,7 +22,7 @@ conda create -n env_name -c kevinkuchinski probetools
 pip install probetools
 ```
 3. Install VSEARCH (version 2.15.2 recommended) from https://github.com/torognes/vsearch
-4. Install BLAST (version 2.10.0 recommended) from https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download
+4. Install BLAST (version 2.12.0 recommended) from https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download
 
 
 # Quick-start to probe design
